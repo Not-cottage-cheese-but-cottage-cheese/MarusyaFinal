@@ -86,19 +86,23 @@ impl Handler<GameMessage> for GameEdible {
                 if command == "съедобное" {
 					if self.last_object.is_some() && self.edible.contains(self.last_object.as_ref().unwrap()) {
 						self.score += 1;
+						self.last_object = Some(new_obj.clone());
 						Ok(self.show_menu(new_obj))
 					} else {
 						ctx.stop();
-						
+
+						self.last_object = Some(new_obj.clone());
 						Ok(self.show_error("Неправильно".to_string()))
 					}
                 } else if command == "несъедобное" {
                     if self.last_object.is_some() && !self.edible.contains(self.last_object.as_ref().unwrap()) {
 						self.score += 1;
+						self.last_object = Some(new_obj.clone());
 						Ok(self.show_menu(new_obj))
 					} else {
 						ctx.stop();
 						
+						self.last_object = Some(new_obj.clone());
 						Ok(self.show_error("Неправильно".to_string()))
 					}
                 } else {

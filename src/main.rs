@@ -98,13 +98,18 @@ async fn is_start_session(request: &Request) -> bool {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() {
     std::env::set_var(
         "RUST_LOG",
         "debug,my_errors=debug,actix_server=debug,actix_web=debug",
     );
     std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
+
+	let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())
+        .parse()
+        .expect("PORT must be a number");
 
     let sessions = SessionEvents::new().start();
 
@@ -122,7 +127,8 @@ async fn main() -> std::io::Result<()> {
             .service(game_21)
 			.service(game_edible)
     })
-    .bind(("0.0.0.0", 80))?
+    .bind(("0.0.0.0", port))
+	.expect(format!("Can not bind to port {}", port))
     .run()
-    .await
+	.await;
 }
