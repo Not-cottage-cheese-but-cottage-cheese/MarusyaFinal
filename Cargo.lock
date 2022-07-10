@@ -484,6 +484,7 @@ dependencies = [
  "futures",
  "http",
  "log",
+ "rand",
  "serde",
  "serde_json",
 ]

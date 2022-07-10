@@ -5,6 +5,7 @@ use serde_json::Value as JsonValue;
 #[derive(Message, Clone)]
 #[rtype(result = "Result<JsonValue, String>")]
 pub enum GameMessage {
+    Started,
     Move(GameMove),
     Stop(String),
 }

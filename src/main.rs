@@ -20,24 +20,41 @@ async fn game_21(
     let response_builder = webhook::response::ResponseBuilder::new();
 
     let session_id = request.session.session_id.clone();
-    if is_new_session(&sessions, session_id.clone(), &request).await {
-        sessions
+
+    let is_new_sess = is_new_session(&sessions, session_id.clone(), &request).await;
+    let is_start_sess = is_start_session(&request).await;
+
+    let response = if is_new_sess && is_start_sess {
+        let res = sessions
             .send(Subscribe {
                 session_id: session_id,
                 recipient: Game21::new().start().recipient(),
             })
             .await;
-    } else {
-        sessions
+
+        match res {
+            Ok(res) => res,
+            Err(e) => Err(format!("{}", e)),
+        }
+    } else if !is_new_sess {
+        let res = sessions
             .send(GameMessage::Move(GameMove {
                 session_id: session_id,
                 data: request.request.clone(),
             }))
             .await;
-    }
+
+        match res {
+            Ok(res) => res,
+            Err(e) => Err(format!("{}", e)),
+        }
+    } else {
+        Err("Неизвестная команда".into())
+    };
 
     web::Json(
         response_builder
+            .set_response(response)
             .set_session(
                 request.session.session_id.clone(),
                 request.session.user_id.clone(),
@@ -55,7 +72,10 @@ async fn is_new_session(
     request: &Request,
 ) -> bool {
     !sessions.send(IsSubscribed(session_id)).await.unwrap()
-        && request.get_nlu().contains(&"старт".into())
+}
+
+async fn is_start_session(request: &Request) -> bool {
+    request.get_nlu().contains(&"старт".into())
 }
 
 #[actix_web::main]
