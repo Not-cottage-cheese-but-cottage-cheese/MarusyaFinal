@@ -1,4 +1,4 @@
-use super::messages::GameMessage;
+use super::super::messages::GameMessage;
 use crate::webhook::response::Button;
 use actix::prelude::*;
 use rand::prelude::*;
@@ -157,10 +157,4 @@ impl Handler<GameMessage> for Game21 {
 
 impl Actor for Game21 {
     type Context = Context<Self>;
-}
-
-#[derive(Clone)]
-pub struct GameMove {
-    pub session_id: String,
-    pub data: JsonValue,
 }
