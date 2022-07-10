@@ -1,4 +1,4 @@
-use actix::{Actor, Addr};
+use actix::{Actor, Addr, Context, Handler};
 use actix_cors::Cors;
 use actix_web::{middleware, post, web, App, HttpServer, Responder};
 
@@ -6,17 +6,20 @@ pub mod session;
 pub mod webhook;
 
 use self::session::{
-    games::{Game21, GameMove},
+    games::*,
     messages::*,
     SessionEvents,
 };
 use webhook::Request;
 
-#[post("/21")]
-async fn game_21(
+async fn game<T>(
     sessions: web::Data<Addr<SessionEvents>>,
     request: web::Json<Request>,
-) -> impl Responder {
+    actor: T,
+) -> impl Responder
+where
+    T: Actor<Context = Context<T>> + Handler<GameMessage>,
+{
     let response_builder = webhook::response::ResponseBuilder::new();
 
     let session_id = request.session.session_id.clone();
@@ -28,7 +31,7 @@ async fn game_21(
         let res = sessions
             .send(Subscribe {
                 session_id: session_id,
-                recipient: Game21::new().start().recipient(),
+                recipient: actor.start().recipient(),
             })
             .await;
 
@@ -66,10 +69,26 @@ async fn game_21(
     )
 }
 
+#[post("/21")]
+async fn game_21(
+    sessions: web::Data<Addr<SessionEvents>>,
+    request: web::Json<Request>,
+) -> impl Responder {
+    game(sessions, request, Game21::new()).await
+}
+
+#[post("/edible")]
+async fn game_edible(
+    sessions: web::Data<Addr<SessionEvents>>,
+    request: web::Json<Request>,
+) -> impl Responder {
+    game(sessions, request, GameEdible::new()).await
+}
+
 async fn is_new_session(
     sessions: &web::Data<Addr<SessionEvents>>,
     session_id: String,
-    request: &Request,
+    _request: &Request,
 ) -> bool {
     !sessions.send(IsSubscribed(session_id)).await.unwrap()
 }
@@ -101,8 +120,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .data(sessions.clone())
             .service(game_21)
+			.service(game_edible)
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", 80))?
     .run()
     .await
 }
