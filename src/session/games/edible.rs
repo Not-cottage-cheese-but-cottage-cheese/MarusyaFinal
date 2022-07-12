@@ -9,7 +9,7 @@ pub struct GameEdible {
     score: u32,
     data: Vec<String>,
     edible: HashSet<String>,
-	last_object: Option<String>,
+    last_object: Option<String>,
 }
 
 impl GameEdible {
@@ -24,15 +24,15 @@ impl GameEdible {
                 .chars()
                 .map(|c| c.into())
                 .collect(),
-			last_object: None,
+            last_object: None,
         }
     }
 
     pub fn get_score_text(&self, object: String) -> JsonValue {
         JsonValue::Array(vec![
-			JsonValue::String(format!("Счет {}", self.score)),
-			JsonValue::String(object),
-		])
+            JsonValue::String(format!("Счет {}", self.score)),
+            JsonValue::String(object),
+        ])
     }
 
     pub fn show_menu(&self, object: String) -> JsonValue {
@@ -44,12 +44,12 @@ impl GameEdible {
                     JsonValue::Array(vec![
                         Button {
                             title: "съедобное".into(),
-							payload: JsonValue::Object(serde_json::Map::new()),
+                            payload: JsonValue::Object(serde_json::Map::new()),
                         }
                         .into(),
                         Button {
                             title: "несъедобное".into(),
-							payload: JsonValue::Object(serde_json::Map::new()),
+                            payload: JsonValue::Object(serde_json::Map::new()),
                         }
                         .into(),
                     ]),
@@ -68,7 +68,7 @@ impl Handler<GameMessage> for GameEdible {
     type Result = Result<JsonValue, String>;
 
     fn handle(&mut self, msg: GameMessage, ctx: &mut Self::Context) -> Self::Result {
-		let new_obj = self.data.choose(&mut rand::thread_rng()).unwrap().clone();
+        let new_obj = self.data.choose(&mut rand::thread_rng()).unwrap().clone();
 
         match msg {
             GameMessage::Started => {
@@ -84,27 +84,31 @@ impl Handler<GameMessage> for GameEdible {
                     .unwrap_or_default();
 
                 if command == "съедобное" {
-					if self.last_object.is_some() && self.edible.contains(self.last_object.as_ref().unwrap()) {
-						self.score += 1;
-						self.last_object = Some(new_obj.clone());
-						Ok(self.show_menu(new_obj))
-					} else {
-						ctx.stop();
+                    if !self.last_object.is_some()
+                        || self.edible.contains(self.last_object.as_ref().unwrap())
+                    {
+                        self.score += 1;
+                        self.last_object = Some(new_obj.clone());
+                        Ok(self.show_menu(new_obj))
+                    } else {
+                        ctx.stop();
 
-						self.last_object = Some(new_obj.clone());
-						Ok(self.show_error("Неправильно".to_string()))
-					}
+                        self.last_object = Some(new_obj.clone());
+                        Ok(self.show_error("Неправильно".to_string()))
+                    }
                 } else if command == "несъедобное" {
-                    if self.last_object.is_some() && !self.edible.contains(self.last_object.as_ref().unwrap()) {
-						self.score += 1;
-						self.last_object = Some(new_obj.clone());
-						Ok(self.show_menu(new_obj))
-					} else {
-						ctx.stop();
-						
-						self.last_object = Some(new_obj.clone());
-						Ok(self.show_error("Неправильно".to_string()))
-					}
+                    if !self.last_object.is_some()
+                        || !self.edible.contains(self.last_object.as_ref().unwrap())
+                    {
+                        self.score += 1;
+                        self.last_object = Some(new_obj.clone());
+                        Ok(self.show_menu(new_obj))
+                    } else {
+                        ctx.stop();
+
+                        self.last_object = Some(new_obj.clone());
+                        Ok(self.show_error("Неправильно".to_string()))
+                    }
                 } else {
                     Ok(self.show_error("Введена неизвестная команда".to_string()))
                 }
